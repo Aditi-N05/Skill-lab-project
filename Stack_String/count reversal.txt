@@ -1,0 +1,27 @@
+#include <stack>
+#include <string>
+using namespace std;
+
+int countRev(string s) {
+    int len = s.length();
+    // If length is odd
+    if (len % 2 != 0)
+        return -1;
+    stack<char> z;
+    for (char ch : s) {
+        if (ch == '}' && !z.empty() && z.top() == '{') {
+            z.pop();  // Matched pair found
+        } else {
+            z.push(ch);  // Push to stack
+        }
+    }
+    int left_stack = z.size();  // Total unbalanced braces
+    // Count the unmatched opening braces '{'
+    int open_count = 0;
+    while (!z.empty() && z.top() == '{') {
+        z.pop();
+        open_count++;
+    }
+    // Calculate the minimum number of reversals needed
+    return (left_stack / 2 + open_count % 2);
+}
