@@ -1,0 +1,43 @@
+
+class Node
+{
+	Node left, right;
+	int data;
+	
+	Node(int d)
+	{
+		data = d;
+		left = right = null;
+	}
+	
+}
+
+
+class Solution {
+    private Node head = null; // Head of the Doubly Linked List
+    private Node prevNode = null; // Pointer to the previous node in the DLL
+
+    Node bToDLL(Node root) {
+        head=prevNode=null;
+       
+        findInorderTraversal(root); // Perform inorder traversal and store nodes in the list
+
+        return head; // Return the head of the DLL
+    }
+
+    private void findInorderTraversal(Node root) {
+        if (root == null) {
+            return; 
+        }
+
+        findInorderTraversal(root.left);  
+        if(prevNode==null){
+           head=root;    
+        }else{
+            root.left=prevNode;
+            prevNode.right=root;
+        }
+        prevNode=root;
+        findInorderTraversal(root.right);
+    }
+}

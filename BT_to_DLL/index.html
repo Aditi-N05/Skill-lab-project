@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary Tree to DLL Animation</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .canvas-container {
+            position: relative;
+            height: 500px;
+            width: 100%;
+        }
+        canvas {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .legend {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            border-radius: 50%;
+        }
+        .speed-control {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .code-container {
+            margin-top: 20px;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            overflow-x: auto;
+        }
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+        code {
+            font-family: 'Courier New', monospace;
+        }
+        .highlight {
+            background-color: #ffeb3b;
+            padding: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Binary Tree to Doubly Linked List Animation</h1>
+        
+        <div class="controls">
+            <button id="playBtn">Play</button>
+            <button id="pauseBtn" disabled>Pause</button>
+            <button id="resetBtn">Reset</button>
+            <button id="stepBtn">Step</button>
+        </div>
+        
+        <div class="speed-control">
+            <label for="speedRange">Animation Speed:</label>
+            <input type="range" id="speedRange" min="1" max="10" value="5">
+            <span id="speedValue">5</span>
+        </div>
+        
+        <div class="canvas-container">
+            <canvas id="animationCanvas" width="900" height="500"></canvas>
+        </div>
+        
+        <div class="legend">
+            <h3>Legend:</h3>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #6ab04c;"></div>
+                <span>Normal Node</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #f0932b;"></div>
+                <span>Current Node (Being Processed)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #eb4d4b;"></div>
+                <span>Previous Node (prev)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #3498db;"></div>
+                <span>Head Node</span>
+            </div>
+        </div>
+        
+        <div class="code-container">
+            <pre><code id="codeDisplay">Node prev = null;
+//Function to convert binary tree to doubly linked list and return it.
+Node bToDLL(Node root) {
+    if(root == null) {
+        return root;
+    }
+    Node head = bToDLL(root.left);
+    if(prev == null) {
+        head = root;
+    } else {
+        prev.right = root;
+        root.left = prev;
+    }
+    prev = root;
+    bToDLL(root.right);
+    return head;
+}</code></pre>
+        </div>
+    </div>
+
+    <script>
+        // Canvas and context
+        const canvas = document.getElementById('animationCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // UI elements
+        const playBtn = document.getElementById('playBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const stepBtn = document.getElementById('stepBtn');
+        const speedRange = document.getElementById('speedRange');
+        const speedValue = document.getElementById('speedValue');
+        const codeDisplay = document.getElementById('codeDisplay');
+        
+        // Animation state
+        let animationSpeed = 5;
+        let isPlaying = false;
+        let animationFrame;
+        let currentStep = 0;
+        
+        // Tree and DLL data structures
+        class TreeNode {
+            constructor(value) {
+                this.value = value;
+                this.left = null;
+                this.right = null;
+                this.x = 0;
+                this.y = 0;
+                this.status = 'normal'; // normal, current, prev, head
+            }
+        }
+        
+        // Create a sample binary tree
+        function createSampleTree() {
+            const root = new TreeNode(10);
+            root.left = new TreeNode(5);
+            root.right = new TreeNode(15);
+            root.left.left = new TreeNode(3);
+            root.left.right = new TreeNode(7);
+            root.right.left = new TreeNode(12);
+            root.right.right = new TreeNode(18);
+            
+            // Calculate initial positions
+            positionTree(root, canvas.width / 2, 50, canvas.width / 4);
+            
+            return root;
+        }
+        
+        // Position the tree nodes for display
+        function positionTree(node, x, y, xOffset) {
+            if (!node) return;
+            
+            node.x = x;
+            node.y = y;
+            
+            if (node.left) {
+                positionTree(node.left, x - xOffset, y + 70, xOffset / 2);
+            }
+            
+            if (node.right) {
+                positionTree(node.right, x + xOffset, y + 70, xOffset / 2);
+            }
+        }
+        
+        // Create a tree to DLL conversion steps array
+        function createConversionSteps(root) {
+            const steps = [];
+            const dllNodes = [];
+            let prev = null;
+            let head = null;
+            
+            // Helper function to simulate the conversion process
+            function inOrderTraversal(node, depth = 0) {
+                if (!node) return null;
+                
+                // Add step: Processing current node
+                steps.push({
+                    type: 'process',
+                    node: node,
+                    message: `Processing node ${node.value}`,
+                    lineNumber: 1,
+                    dllNodes: [...dllNodes],
+                    prev: prev,
+                    head: head,
+                    depth: depth
+                });
+                
+                // Add step: Check if node is null
+                steps.push({
+                    type: 'condition',
+                    node: node,
+                    message: `Checking if node is null: (${node.value} != null)`,
+                    lineNumber: 2,
+                    dllNodes: [...dllNodes],
+                    prev: prev,
+                    head: head,
+                    depth: depth
+                });
+                
+                // Recursive call to left subtree
+                steps.push({
+                    type: 'recursive-left',
+                    node: node,
+                    message: `Recursive call to left subtree of ${node.value}`,
+                    lineNumber: 4,
+                    dllNodes: [...dllNodes],
+                    prev: prev,
+                    head: head,
+                    depth: depth
+                });
+                
+                // Simulate recursive call to left
+                const leftHead = inOrderTraversal(node.left, depth + 1);
+                
+                // After returning from left subtree
+                steps.push({
+                    type: 'return-from-left',
+                    node: node,
+                    message: `Returned from left subtree of ${node.value}`,
+                    lineNumber: 4,
+                    dllNodes: [...dllNodes],
+                    prev: prev,
+                    head: head,
+                    depth: depth
+                });
+                
+                // Check if prev is null
+                steps.push({
+                    type: 'check-prev',
+                    node: node,
+                    message: `Checking if prev is null: (prev ${prev ? '!= null' : '== null'})`,
+                    lineNumber: 5,
+                    dllNodes: [...dllNodes],
+                    prev: prev,
+                    head: head,
+                    depth: depth
+                });
+                
+                // Update head if needed
+                if (!prev) {
+                    head = node;
+                    steps.push({
+                        type: 'update-head',
+                        node: node,
+                        message: `Setting head = ${node.value}`,
+                        lineNumber: 6,
+                        dllNodes: [...dllNodes],
+                        prev: prev,
+                        head: node,
+                        depth: depth
+                    });
+                } else {
+                    // Update links between prev and current
+                    steps.push({
+                        type: 'update-links',
+                        node: node,
+                        message: `Setting prev.right = ${node.value} and ${node.value}.left = prev.value`,
+                        lineNumber: 8,
+                        dllNodes: [...dllNodes],
+                        prev: prev,
+                        head: head,
+                        depth: depth
+                    });
+                }
+                
+                // Add to DLL
+                if (!dllNodes.includes(node)) {
+                    dllNodes.push(node);
+                }
+                
+                // Update prev
+                const oldPrev = prev;
+                prev = node;
+                steps.push({
+                    type: 'update-prev',
+                    node: node,
+                    message: `Setting prev = ${node.value}`,
+                    lineNumber: 10,
+                    dllNodes: [...dllNodes],
+                    prev: node,
+                    head: head,
+                    oldPrev: oldPrev,
+                    depth: depth
+                });
+                
+                // Recursive call to right subtree
+                steps.push({
+                    type: 'recursive-right',
+                    node: node,
+                    message: `Recursive call to right subtree of ${node.value}`,
+                    lineNumber: 11,
+                    dllNodes: [...dllNodes],
+                    prev: prev,
+                    head: head,
+                    depth: depth
+                });
+                
+                // Simulate recursive call to right
+                inOrderTraversal(node.right, depth + 1);
+                
+                // After returning from right subtree
+                steps.push({
+                    type: 'return-from-right',
+                    node: node,
+                    message: `Returned from right subtree of ${node.value}, returning head`,
+                    lineNumber: 12,
+                    dllNodes: [...dllNodes],
+                    prev: prev,
+                    head: head,
+                    depth: depth
+                });
+                
+                return head;
+            }
+            
+            inOrderTraversal(root);
+            
+            return steps;
+        }
+        
+        // Draw a node
+        function drawNode(node, status = 'normal') {
+            if (!node) return;
+            
+            let color;
+            switch(status) {
+                case 'current':
+                    color = '#f0932b'; // Orange
+                    break;
+                case 'prev':
+                    color = '#eb4d4b'; // Red
+                    break;
+                case 'head':
+                    color = '#3498db'; // Blue
+                    break;
+                default:
+                    color = '#6ab04c'; // Green
+            }
+            
+            // Draw the circle
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, 20, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = '#2d3436';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Draw the value
+            ctx.font = '14px Arial';
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(node.value, node.x, node.y);
+        }
+        
+        // Draw a tree
+        function drawTree(root) {
+            if (!root) return;
+            
+            // Draw edges first
+            drawTreeEdges(root);
+            
+            // Then draw nodes
+            drawTreeNodes(root);
+        }
+        
+        // Draw tree edges
+        function drawTreeEdges(node) {
+            if (!node) return;
+            
+            if (node.left) {
+                ctx.beginPath();
+                ctx.moveTo(node.x, node.y + 20);
+                ctx.lineTo(node.left.x, node.left.y - 20);
+                ctx.strokeStyle = '#7f8c8d';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                drawTreeEdges(node.left);
+            }
+            
+            if (node.right) {
+                ctx.beginPath();
+                ctx.moveTo(node.x, node.y + 20);
+                ctx.lineTo(node.right.x, node.right.y - 20);
+                ctx.strokeStyle = '#7f8c8d';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                drawTreeEdges(node.right);
+            }
+        }
+        
+        // Draw tree nodes
+        function drawTreeNodes(node) {
+            if (!node) return;
+            
+            drawNode(node, node.status);
+            
+            if (node.left) {
+                drawTreeNodes(node.left);
+            }
+            
+            if (node.right) {
+                drawTreeNodes(node.right);
+            }
+        }
+        
+        // Draw doubly linked list
+        function drawDLL(nodes, head, prev) {
+            if (nodes.length === 0) return;
+            
+            const startY = 350;
+            const nodeRadius = 20;
+            const spacing = 80;
+            
+            // Calculate start X to center the list
+            const startX = (canvas.width - (nodes.length - 1) * spacing) / 2;
+            
+            // First set positions
+            nodes.forEach((node, index) => {
+                node.dllX = startX + index * spacing;
+                node.dllY = startY;
+            });
+            
+            // Draw connections
+            for (let i = 0; i < nodes.length - 1; i++) {
+                // Right pointer
+                ctx.beginPath();
+                ctx.moveTo(nodes[i].dllX + nodeRadius, nodes[i].dllY);
+                ctx.lineTo(nodes[i+1].dllX - nodeRadius, nodes[i+1].dllY);
+                ctx.strokeStyle = '#2980b9';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Arrow for right pointer
+                drawArrow(nodes[i+1].dllX - nodeRadius, nodes[i+1].dllY, 0, '#2980b9');
+                
+                // Left pointer
+                ctx.beginPath();
+                ctx.moveTo(nodes[i+1].dllX - nodeRadius, nodes[i+1].dllY + 10);
+                ctx.lineTo(nodes[i].dllX + nodeRadius, nodes[i].dllY + 10);
+                ctx.strokeStyle = '#e74c3c';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Arrow for left pointer
+                drawArrow(nodes[i].dllX + nodeRadius, nodes[i].dllY + 10, Math.PI, '#e74c3c');
+            }
+            
+            // Draw nodes
+            nodes.forEach((node) => {
+                let status = 'normal';
+                if (node === head) status = 'head';
+                if (node === prev) status = 'prev';
+                
+                // Draw node circle
+                ctx.beginPath();
+                ctx.arc(node.dllX, node.dllY, nodeRadius, 0, Math.PI * 2);
+                
+                if (status === 'normal') {
+                    ctx.fillStyle = '#6ab04c'; // Green
+                } else if (status === 'head') {
+                    ctx.fillStyle = '#3498db'; // Blue
+                } else if (status === 'prev') {
+                    ctx.fillStyle = '#eb4d4b'; // Red
+                }
+                
+                ctx.fill();
+                ctx.strokeStyle = '#2d3436';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Draw node value
+                ctx.font = '14px Arial';
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(node.value, node.dllX, node.dllY);
+            });
+            
+            // Draw the head label
+            if (head) {
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#3498db';
+                ctx.textAlign = 'center';
+                ctx.fillText('Head', head.dllX, head.dllY - 35);
+            }
+            
+            // Draw the prev label
+            if (prev) {
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#eb4d4b';
+                ctx.textAlign = 'center';
+                ctx.fillText('Prev', prev.dllX, prev.dllY - 35);
+            }
+        }
+        
+        // Draw an arrow
+        function drawArrow(x, y, angle, color) {
+            const arrowSize = 8;
+            
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-arrowSize, -arrowSize / 2);
+            ctx.lineTo(-arrowSize, arrowSize / 2);
+            ctx.closePath();
+            
+            ctx.fillStyle = color;
+            ctx.fill();
+            
+            ctx.restore();
+        }
+        
+        // Draw recursion stack
+        function drawRecursionStack(step) {
+            if (!step || !step.depth) return;
+            
+            const stackX = 20;
+            const stackY = 50;
+            const stackItemHeight = 30;
+            const stackItemWidth = 150;
+            
+            ctx.fillStyle = 'rgba(236, 240, 241, 0.8)';
+            ctx.fillRect(stackX, stackY, stackItemWidth, (step.depth + 1) * stackItemHeight);
+            ctx.strokeStyle = '#7f8c8d';
+            ctx.strokeRect(stackX, stackY, stackItemWidth, (step.depth + 1) * stackItemHeight);
+            
+            ctx.font = '14px Arial';
+            ctx.fillStyle = '#34495e';
+            ctx.textAlign = 'left';
+            ctx.fillText('Recursion Stack:', stackX + 10, stackY + 20);
+            
+            for (let i = 0; i <= step.depth; i++) {
+                ctx.fillStyle = i === step.depth ? '#e74c3c' : '#7f8c8d';
+                ctx.fillText(`bToDLL(node=${step.node.value})`, stackX + 10, stackY + (i + 1) * stackItemHeight - 10);
+            }
+        }
+        
+        // Draw message
+        function drawMessage(message) {
+            const messageX = canvas.width / 2;
+            const messageY = 25;
+            
+            ctx.font = 'bold 16px Arial';
+            ctx.fillStyle = '#2c3e50';
+            ctx.textAlign = 'center';
+            ctx.fillText(message, messageX, messageY);
+        }
+        
+        // Highlight code line
+        function highlightCodeLine(lineNumber) {
+            // Reset code display
+            const codeLines = codeDisplay.textContent.split('\n');
+            
+            // Create new content with highlight
+            let newContent = '';
+            codeLines.forEach((line, index) => {
+                if (index === lineNumber - 1) {
+                    newContent += `<span class="highlight">${line}</span>\n`;
+                } else {
+                    newContent += `${line}\n`;
+                }
+            });
+            
+            codeDisplay.innerHTML = newContent;
+        }
+        
+        // Initialize animation
+        let tree = createSampleTree();
+        let steps = createConversionSteps(tree);
+        
+        // Draw function
+        function draw() {
+            // Clear the canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (currentStep < steps.length) {
+                const step = steps[currentStep];
+                
+                // Reset all node statuses
+                resetNodeStatuses(tree);
+                
+                // Update node statuses based on current step
+                updateNodeStatuses(step);
+                
+                // Draw tree
+                drawTree(tree);
+                
+                // Draw DLL
+                drawDLL(step.dllNodes, step.head, step.prev);
+                
+                // Draw recursion stack
+                drawRecursionStack(step);
+                
+                // Draw message
+                drawMessage(step.message);
+                
+                // Highlight code
+                highlightCodeLine(step.lineNumber);
+            } else {
+                // Animation finished
+                isPlaying = false;
+                playBtn.disabled = false;
+                pauseBtn.disabled = true;
+            }
+        }
+        
+        // Reset all node statuses
+        function resetNodeStatuses(node) {
+            if (!node) return;
+            
+            node.status = 'normal';
+            
+            if (node.left) resetNodeStatuses(node.left);
+            if (node.right) resetNodeStatuses(node.right);
+        }
+        
+        // Update node statuses based on current step
+        function updateNodeStatuses(step) {
+            if (!step) return;
+            
+            if (step.node) {
+                step.node.status = 'current';
+            }
+            
+            if (step.prev) {
+                step.prev.status = 'prev';
+            }
+            
+            if (step.head) {
+                step.head.status = 'head';
+            }
+        }
+        
+        // Animation loop
+        function animate() {
+            if (isPlaying && currentStep < steps.length) {
+                draw();
+                setTimeout(() => {
+                    currentStep++;
+                    animationFrame = requestAnimationFrame(animate);
+                }, 1000 / animationSpeed);
+            } else {
+                isPlaying = false;
+                playBtn.disabled = false;
+                pauseBtn.disabled = true;
+            }
+        }
+        
+        // Event listeners
+        playBtn.addEventListener('click', () => {
+            isPlaying = true;
+            playBtn.disabled = true;
+            pauseBtn.disabled = false;
+            animate();
+        });
+        
+        pauseBtn.addEventListener('click', () => {
+            isPlaying = false;
+            playBtn.disabled = false;
+            pauseBtn.disabled = true;
+            cancelAnimationFrame(animationFrame);
+        });
+        
+        resetBtn.addEventListener('click', () => {
+            isPlaying = false;
+            currentStep = 0;
+            playBtn.disabled = false;
+            pauseBtn.disabled = true;
+            cancelAnimationFrame(animationFrame);
+            draw();
+        });
+        
+        stepBtn.addEventListener('click', () => {
+            isPlaying = false;
+            playBtn.disabled = false;
+            pauseBtn.disabled = true;
+            cancelAnimationFrame(animationFrame);
+            
+            if (currentStep < steps.length) {
+                draw();
+                currentStep++;
+            }
+        });
+        
+        speedRange.addEventListener('input', () => {
+            animationSpeed = parseInt(speedRange.value);
+            speedValue.textContent = animationSpeed;
+        });
+        
+        // Initial draw
+        draw();
+    </script>
+</body>
+</html>
